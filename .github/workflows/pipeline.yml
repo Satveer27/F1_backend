@@ -52,7 +52,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install uv 
+          uvi pip install -r requirements.txt
       
       # Run tests
       - name: Run tests
@@ -60,5 +61,30 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       
+  dockerfile-build:
+    runs-on: ubuntu-latest
+    needs: startup-and-test
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start app via docker-compose
+        run: docker-compose up -d --build
+      
+      - name: Wait and check health endpoint
+        run: |
+          for i in $(seq 1 10); do
+            if curl --fail http://localhost:8000/health; then
+              echo "App is healthy"
+              exit 0
+            fi
+            echo "Not ready yet, retrying..."
+            sleep 3
+          done
+          echo "App failed to become healthy in time"
+          exit 1
+      
+      - name: tear down
+        run: docker-compose down
 

@@ -1,0 +1,18 @@
+[project]
+name = "f1planet"
+version = "0.1.0"
+description = "F1 trivia, live race viewing, and competitive quiz platform"
+requires-python = ">=3.11"
+dependencies = [
+    "alembic>=1.19.1",
+    "asyncpg>=0.31.0",
+    "fastapi>=0.141.1",
+    "python-dotenv>=1.2.2",
+    "sqlalchemy[asyncio]>=2.0.52",
+    "uvicorn>=0.52.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
