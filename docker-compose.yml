@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: f1_db
+    environment:
+      POSTGRES_USER: f1_user
+      POSTGRES_PASSWORD: f1_password
+      POSTGRES_DB: f1_database
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  
+  app:
+    depends_on:
+      - db
+    build: .
+    container_name: f1_app
+    ports:
+      - "8000:8000"
+    environment:
+      DB_URL: postgresql+asyncpg://f1_user:f1_password@db:5432/f1_database
+      ENVIRONMENT: testing
+      LOG_SQL: TRUE
+
+
+volumes:
+  db_data:
