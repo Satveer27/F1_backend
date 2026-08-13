@@ -10,6 +10,17 @@ services:
       - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+  
+  app:
+    depends_on:
+      - db
+    build: .
+    container_name: f1_app
+    ports:
+      - "8000:8000"
+    environment:
+      DB_URL: postgresql://f1_user:f1_password@db:5432/f1_database
+  
 
 volumes:
   db_data:
