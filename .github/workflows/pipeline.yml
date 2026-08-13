@@ -57,7 +57,7 @@ jobs:
       
       # Run tests
       - name: Run tests
-        run: pytest --disable-warnings -q
+        run: uv run pytest --disable-warnings -q
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
       
