@@ -8,7 +8,7 @@ environment = os.getenv("APP_ENV", "dev")
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=f".env.{environment}", extra="ignore")
     db_url: str
-    log_sql: bool
+    log_sql: bool = False
     environment: str = environment
 
 settings = Settings()
