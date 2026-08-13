@@ -3,6 +3,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db, engine
 from contextlib import asynccontextmanager
+from app.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -11,7 +12,7 @@ async def lifespan(app: FastAPI):
     try:
         async with engine.connect() as conn:
                 await conn.execute(text("SELECT 1"))
-                print(f"{app_name} is ready to serve requests and connected to database.")
+                print(f"{app_name} is ready to serve requests and connected to database. running in {settings.environment}")
     except Exception as e:
         print(f"Database connection failed: {e}")
         raise
