@@ -19,7 +19,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DB_URL: postgresql://f1_user:f1_password@db:5432/f1_database
+      DB_URL: postgresql+asyncpg://f1_user:f1_password@db:5432/f1_database
   
 
 volumes:
