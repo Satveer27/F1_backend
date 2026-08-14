@@ -59,19 +59,19 @@ jobs:
       - name: run alembic migrations
         run: uv run alembic upgrade head
         env:
-          DB_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
       
       # Alembic migration checks
       - name: check for missing migrations
         run: uv run alembic check
         env:
-          DB_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
       
       # Run tests
       - name: Run tests
         run: uv run pytest --disable-warnings -q
         env:
-          DB_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
       
   dockerfile-build:
     runs-on: ubuntu-latest
