@@ -26,15 +26,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DB_URL: postgresql+asyncpg://f1_user:f1_password@db:5432/f1_database
-      REDIS_URL: redis://redis:6379/0
-      ENVIRONMENT: testing
-      LOG_SQL: TRUE
-      HTTP_SECURE: FALSE
+      DB_URL: ${DB_URL}
+      REDIS_URL: ${REDIS_URL}
       JWT_SECRET: ${JWT_SECRET}
-      JWT_ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_MINUTES: 30
-      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS}
+      ENVIRONMENT: ${ENVIRONMENT}
 
 
 volumes:
