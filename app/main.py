@@ -21,6 +21,10 @@ from app.exceptions import(
 from app.router import main_router
 from fastapi.exceptions import RequestValidationError
 from app.core.redis.redis_client import redis_server
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from app.core.schedulers.refresh_token_scheduler import clean_refresh_tokens
+from zoneinfo import ZoneInfo
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,9 +41,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Database connection failed: {e}")
         raise
+
+    scheduler = AsyncIOScheduler()
+    trigger = CronTrigger(hour=0, minute=0, timezone=ZoneInfo("Europe/London"))
+    scheduler.add_job(clean_refresh_tokens, trigger)
+    scheduler.start()
     
     yield
     print(f"Shutting down {app_name}...")
+    scheduler.shutdown()
     await redis_server.close()
 
 
