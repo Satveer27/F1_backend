@@ -60,18 +60,36 @@ jobs:
         run: uv run alembic upgrade head
         env:
           DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: 30
+          REFRESH_TOKEN_EXPIRE_DAYS: 7
+
       
       # Alembic migration checks
       - name: check for missing migrations
         run: uv run alembic check
         env:
           DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: 30
+          REFRESH_TOKEN_EXPIRE_DAYS: 7
+
       
       # Run tests
       - name: Run tests
         run: uv run pytest --disable-warnings -q
         env:
           DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: 30
+          REFRESH_TOKEN_EXPIRE_DAYS: 7
+
       
   dockerfile-build:
     runs-on: ubuntu-latest
