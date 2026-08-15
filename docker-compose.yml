@@ -11,17 +11,30 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
   
+  redis:
+    image: redis:7-alpine
+    container_name: f1_redis
+    ports:
+      - "6379:6379"
+
   app:
     depends_on:
       - db
+      - redis
     build: .
     container_name: f1_app
     ports:
       - "8000:8000"
     environment:
       DB_URL: postgresql+asyncpg://f1_user:f1_password@db:5432/f1_database
+      REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: testing
       LOG_SQL: TRUE
+      HTTP_SECURE: FALSE
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
 
 
 volumes:

@@ -1,13 +1,26 @@
 from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import get_db, engine
+from app.core.database.database import get_db, engine
 from contextlib import asynccontextmanager
 from app.config import settings
-from app.exceptions import DuplicateResourceError, handle_duplicate_resource_error, handle_internal_exception, handle_unprocessable_entity_exception
+from app.exceptions import (
+    handle_duplicate_resource_error,
+    handle_resource_does_not_exist_exception,
+    handle_auth_token_error,
+    handle_already_logged_in_error,
+    handle_unprocessable_entity_exception,
+    handle_internal_exception,
+)
+from app.exceptions import(
+    DuplicateResourceError,
+    ResourceDoesNotExistError,
+    AuthTokenError,
+    ConflictLoggingIn,
+)
 from app.router import main_router
 from fastapi.exceptions import RequestValidationError
-
+from app.core.redis.redis_client import redis_server
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,12 +30,17 @@ async def lifespan(app: FastAPI):
         async with engine.connect() as conn:
                 await conn.execute(text("SELECT 1"))
                 print(f"{app_name} is ready to serve requests and connected to database. running in {settings.environment}")
+
+        await redis_server.ping()
+        print("Redis connection successful.")
+        
     except Exception as e:
         print(f"Database connection failed: {e}")
         raise
     
     yield
     print(f"Shutting down {app_name}...")
+    await redis_server.close()
 
 
 app = FastAPI(title="F1 FastAPI Application", lifespan=lifespan)
@@ -35,6 +53,9 @@ app.include_router(main_router)
 app.add_exception_handler(Exception, handle_internal_exception)
 app.add_exception_handler(DuplicateResourceError, handle_duplicate_resource_error)
 app.add_exception_handler(RequestValidationError, handle_unprocessable_entity_exception)
+app.add_exception_handler(ResourceDoesNotExistError, handle_resource_does_not_exist_exception)
+app.add_exception_handler(AuthTokenError, handle_auth_token_error)
+app.add_exception_handler(ConflictLoggingIn, handle_already_logged_in_error)
 
 # health and root endpoint
 @app.get("/")

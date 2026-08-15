@@ -1,6 +1,6 @@
 from app.users.repository import UserRepository
 from fastapi import Depends
-from app.database import get_db
+from app.core.database.database import get_db
 from app.users.service import UserService
 from sqlalchemy.ext.asyncio import AsyncSession
 

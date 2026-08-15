@@ -3,7 +3,7 @@ from app.users.schemas import UserCreateSchema
 from app.users.exceptions import UserAlreadyExistsError
 from app.users.schemas import UserResponseSchema
 from app.users.models import User
-from app.security.password import hash_password
+from app.security.utils.password import hash_password
 
 class UserService:
     def __init__(self, user_repository: UserRepository):

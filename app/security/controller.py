@@ -1,0 +1,53 @@
+from fastapi import APIRouter, Depends, Cookie, Response, Header
+from app.security.schemas import RefreshResponse, UserRequestLogin, TokenResponse
+from app.security.deps import create_jwt_service
+from app.security.service import JWTService
+from app.security.exceptions import InvalidTokenError, AlreadyLoggedInError
+from app.security.utils.jwt import decode_token
+from app.config import settings
+
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
+
+@auth_router.post("/refresh", response_model=TokenResponse, status_code=201)
+async def refresh_access_token( response: Response,
+                                refresh_token: str | None = Cookie(default=None), 
+                                service: JWTService = Depends(create_jwt_service),):
+    if refresh_token is None:
+        raise InvalidTokenError("No refresh token provided")
+    else:
+        result = await service.refresh_access_token_service(refresh_token)
+        response.set_cookie(
+                key="refresh_token",
+                value=result.refresh_token,
+                httponly=True,
+                secure=False,       
+                samesite="lax",
+                max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+            )
+        return TokenResponse(access_token=result.access_token, token_type="bearer")
+
+@auth_router.post("/login", response_model=TokenResponse, status_code=201)
+async def login(request: UserRequestLogin, 
+                response: Response, 
+                refresh_token: str | None = Cookie(default=None), 
+                authorization: str | None = Header(default=None),
+                service: JWTService = Depends(create_jwt_service)):
+    
+    access_token = None
+    if authorization is not None:
+        scheme, _, token = authorization.partition(" ")
+        if scheme.lower() == "bearer" and token:
+            access_token = token
+
+    await service.check_already_logged_in(access_token, refresh_token)
+    
+    result = await service.login_service(request.email, request.password)
+    response.set_cookie(
+        key="refresh_token",
+        value=result.refresh_token,
+        httponly=True,
+        secure=False,       
+        samesite="lax",
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+    )
+    return TokenResponse(access_token=result.access_token, token_type="bearer")
