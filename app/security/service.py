@@ -4,7 +4,7 @@ from app.security.exceptions import InvalidTokenError, TokenDoesNotExist, Reusin
 from app.security.models import RefreshToken
 from app.security.schemas import RefreshResponse
 import structlog
-from app.security.utils.redis_util import revoke_access_to_all_tokens, is_token_revoked
+from app.security.utils.redis_util import revoke_access_to_all_tokens, is_token_revoked, revoke_single_access_token
 from app.security.utils.password import check_password
 from app.users.repository import UserRepository
 from datetime import datetime, timezone
@@ -93,25 +93,59 @@ class JWTService:
         
         return RefreshResponse(refresh_token=new_refresh_token, access_token=new_access_token)
 
-    async def check_already_logged_in(self, access_token: str | None, refresh_token: str | None) -> None:
+
+    async def logout_service(self, refresh_token: str, access_token: str | None = None) -> None:
+        verified_token = decode_token(refresh_token, "refresh")
+
+        sub = verified_token.get("sub")
+        jti = verified_token.get("jti")
+
+        if sub is None or jti is None:
+            logger.warning("refresh_token_missing_fields")
+            raise InvalidTokenError("Token missing fields")
+
+        current_token = await self.refresh_token_repository.get_refresh_token_by_jti(jti)
+
+        if current_token is None or current_token.revoke:
+            raise TokenDoesNotExist("Token is invalid or already logged out")
+        
+        current_token.revoke = True
+        await self.refresh_token_repository.update_refresh_token(current_token)
+
         if access_token is not None:
             try:
-                payload = decode_token(access_token, "access")
-                jti = payload.get("jti")
-                if jti is not None and not await is_token_revoked(jti):
-                    logger.info("login_blocked_active_access_token", jti=jti)
-                    raise AlreadyLoggedInError("You are already logged in")
+                verfied_access_token = decode_token(access_token, "access")
+                jti_access = verfied_access_token.get("jti")
+                exp_access = verfied_access_token.get("exp")
+                if jti_access is not None and exp_access is not None:
+                    await revoke_single_access_token(jti_access, exp_access)
             except InvalidTokenError:
                 pass
+                
+        logger.info("user_logged_out", user_id=sub, jti=jti)
 
-        if refresh_token is not None:
-            try:
-                payload = decode_token(refresh_token, "refresh")
-                jti = payload.get("jti")
-                existing = await self.refresh_token_repository.get_refresh_token_by_jti(jti)
-                if existing is not None and not existing.revoke:
-                    logger.info("login_blocked_active_refresh_token", jti=jti)
-                    raise AlreadyLoggedInError("You are already logged in")
-            except InvalidTokenError:
-                pass
+
+    async def logout_all_accounts(self, refresh_token: str) -> None:
+        verified_token = decode_token(refresh_token, "refresh")
+
+        sub = verified_token.get("sub")
+        jti = verified_token.get("jti")
+        
+        if sub is None or jti is None:
+            logger.warning("refresh_token_missing_fields")
+            raise InvalidTokenError("Token missing fields")
+
+        current_token = await self.refresh_token_repository.get_refresh_token_by_jti(jti)
+
+        if current_token is None or current_token.revoke:
+            raise TokenDoesNotExist("Token is invalid")
+
+        refreshList = await self.refresh_token_repository.get_refresh_token_by_user_id(UUID(sub))
+        if len(refreshList) != 0:
+            for token in refreshList:
+                token.revoke = True
+                await self.refresh_token_repository.update_refresh_token(token)
+
+        await revoke_access_to_all_tokens(UUID(sub))
+        
          

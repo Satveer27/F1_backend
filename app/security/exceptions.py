@@ -1,10 +1,9 @@
-from app.exceptions import ResourceDoesNotExistError
 from app.exceptions import AuthTokenError, ConflictLoggingIn
 
 class InvalidTokenError(AuthTokenError):
     pass
 
-class TokenDoesNotExist(ResourceDoesNotExistError):
+class TokenDoesNotExist(AuthTokenError):
     pass
 
 class ReusingToken(AuthTokenError):

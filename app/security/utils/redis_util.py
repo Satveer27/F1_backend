@@ -11,6 +11,12 @@ async def track_access_token(user_id:UUID, jti: str, expires_at: datetime):
 async def is_token_revoked(jti: str) -> bool:
     return await redis_server.exists(f"revoked:{jti}") == 1
 
+async def revoke_single_access_token(jti: str, exp: float) -> None:
+    now = datetime.now(timezone.utc).timestamp()
+    ttl = max(int(exp - now), 0)
+    await redis_server.setex(f"revoked:{jti}", ttl, "1")
+
+
 async def revoke_access_to_all_tokens(user_id:UUID) -> None:
     now = datetime.now(timezone.utc).timestamp()
     await redis_server.zremrangebyscore(f"user_tokens:{user_id}", min="-inf", max=now)
